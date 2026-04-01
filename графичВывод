@@ -1,0 +1,63 @@
+#include <Servo.h>
+
+// ========== ДЖОЙСТИКИ И СЕРВО ==========
+Servo servo1_X, servo1_Y, servo2_X, servo2_Y;
+const int pinJoy1_X = A0, pinJoy1_Y = A1;
+const int pinJoy2_X = A2, pinJoy2_Y = A3;
+const int pinServo1_X = 10, pinServo1_Y = 13;
+const int pinServo2_X = 4, pinServo2_Y = 7;
+
+// ========== ACS712 НА A4 ==========
+const int pinACS712 = A4;
+const float VCC = 5.0;
+const float zeroPoint = 2.5;      //  Калибруй под свой модуль!
+const float sensitivity = 0.185;  // 0.185 для 5А
+
+int val1_X, val1_Y, val2_X, val2_Y;
+float currentA = 0.0;
+
+float readCurrent() {
+  long sum = 0;
+  for (int i = 0; i < 10; i++) sum += analogRead(pinACS712);
+  float voltage = (sum / 10.0) * (VCC / 1023.0);
+  return (voltage - zeroPoint) / sensitivity;
+}
+
+void setup() {
+  Serial.begin(9600);
+  
+  servo1_X.attach(pinServo1_X); servo1_Y.attach(pinServo1_Y);
+  servo2_X.attach(pinServo2_X); servo2_Y.attach(pinServo2_Y);
+  
+  servo1_X.write(0); servo1_Y.write(0);
+  servo2_X.write(0); servo2_Y.write(0);
+  delay(1000);
+}
+
+void loop() {
+  // Джойстик 1
+  val1_X = analogRead(pinJoy1_X); val1_Y = analogRead(pinJoy1_Y);
+  servo1_X.write(map(val1_X, 0, 1023, 0, 180));
+  servo1_Y.write(map(val1_Y, 0, 1023, 0, 180));
+  
+  // Джойстик 2
+  val2_X = analogRead(pinJoy2_X); val2_Y = analogRead(pinJoy2_Y);
+  servo2_X.write(map(val2_X, 0, 1023, 0, 180));
+  servo2_Y.write(map(val2_Y, 0, 1023, 0, 180));
+  
+  // Ток
+  currentA = readCurrent();
+
+  // ВЫВОД ТОЛЬКО ТОКА для Serial Plotter
+  // Если хочешь видеть и углы — раскомментируй строки ниже
+  Serial.println(currentA, 2);  // ← основной график: ток
+  
+  // Для мультиграфика (раскомментируй, если нужно):
+  // Serial.print(angle1_X); Serial.print(",");
+  // Serial.print(angle1_Y); Serial.print(",");
+  // Serial.print(angle2_X); Serial.print(",");
+  // Serial.print(angle2_Y); Serial.print(",");
+  // Serial.println(currentA, 2);
+
+  delay(15);
+}
